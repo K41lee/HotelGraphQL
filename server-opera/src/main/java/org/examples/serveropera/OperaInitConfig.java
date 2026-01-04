@@ -1,0 +1,28 @@
+package org.examples.serveropera;
+
+import Impl.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+//@Configuration  // DÉSACTIVÉ - DataInitializer gère l'initialisation
+public class OperaInitConfig {
+    //@Bean("gestionnaireInit")  // DÉSACTIVÉ
+    public Gestionnaire gestionnaire() {
+        Gestionnaire g = new Gestionnaire();
+
+        // Images SVG encodées en base64 pour affichage direct dans le GUI
+        String svgDouble = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2Y1ZjVmNSIvPjxyZWN0IHg9IjUwIiB5PSIxMDAiIHdpZHRoPSIxNDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjOGI0NTEzIiByeD0iNSIvPjxyZWN0IHg9IjIxMCIgeT0iMTAwIiB3aWR0aD0iMTQwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzhiNDUxMyIgcng9IjUiLz48cmVjdCB4PSI2MCIgeT0iMTEwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjZmZmZmZmIiByeD0iMyIvPjxyZWN0IHg9IjIyMCIgeT0iMTEwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjZmZmZmZmIiByeD0iMyIvPjx0ZXh0IHg9IjIwMCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T3BlcmEgLSBDaGFtYnJlIDIwMTwvdGV4dD48dGV4dCB4PSIyMDAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjIgbGl0cyAtIDIyMOKCrC9udWl0PC90ZXh0Pjwvc3ZnPg==";
+        String svgDouble2 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2VmZjhmZiIvPjxyZWN0IHg9IjUwIiB5PSIxMDAiIHdpZHRoPSIxNDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjNmE1YWNkIiByeD0iNSIvPjxyZWN0IHg9IjIxMCIgeT0iMTAwIiB3aWR0aD0iMTQwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzZhNWFjZCIgcng9IjUiLz48cmVjdCB4PSI2MCIgeT0iMTEwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjZmZmZmZmIiByeD0iMyIvPjxyZWN0IHg9IjIyMCIgeT0iMTEwIiB3aWR0aD0iMTIwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjZmZmZmZmIiByeD0iMyIvPjx0ZXh0IHg9IjIwMCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzMzMyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+T3BlcmEgLSBDaGFtYnJlIDIwMjwvdGV4dD48dGV4dCB4PSIyMDAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiPjIgbGl0cyAtIDI0MOKCrC9udWl0PC90ZXh0Pjwvc3ZnPg==";
+        String svgTriple = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgZmlsbD0iI2ZmZjhlZiIvPjxyZWN0IHg9IjMwIiB5PSIxMDAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjZDA2MDMwIiByeD0iNSIvPjxyZWN0IHg9IjE1MCIgeT0iMTAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2QwNjAzMCIgcng9IjUiLz48cmVjdCB4PSIyNzAiIHk9IjEwMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNkMDYwMzAiIHJ4PSI1Ii8+PHJlY3QgeD0iNDAiIHk9IjExMCIgd2lkdGg9IjgwIiBoZWlnaHQ9IjYwIiBmaWxsPSIjZmZmZmZmIiByeD0iMyIvPjxyZWN0IHg9IjE2MCIgeT0iMTEwIiB3aWR0aD0iODAiIGhlaWdodD0iNjAiIGZpbGw9IiNmZmZmZmYiIHJ4PSIzIi8+PHJlY3QgeD0iMjgwIiB5PSIxMTAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgZmlsbD0iI2ZmZmZmZiIgcng9IjMiLz48dGV4dCB4PSIyMDAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMzMzMiIHRleHQtYW5jaG9yPSJtaWRkbGUiPk9wZXJhIC0gQ2hhbWJyZSAyMDM8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSI3NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiBmaWxsPSIjNjY2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj4zIGxpdHMgLSAyODDigqwvbnVpdDwvdGV4dD48L3N2Zz4=";
+
+        Hotel h = new Hotel("Luxe Opéra", new Adresse("France","Montpellier","Bd Victor",5,"Quartier Opéra",43.61,3.89), Categorie.HAUT_DE_GAMME, 5);
+        h.addChambre(new Chambre(h, 201, 2, 220, svgDouble));
+        h.addChambre(new Chambre(h, 202, 2, 240, svgDouble2));
+        h.addChambre(new Chambre(h, 203, 3, 280, svgTriple));
+        // h.addAgence(new Agence("operaAgency", 0.05));
+
+        g.addHotel(h);
+        return g;
+    }
+}
+

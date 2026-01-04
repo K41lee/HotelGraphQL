@@ -1,0 +1,174 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.examples</groupId>
+        <artifactId>hotel-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>client-cli</artifactId>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <wsdl.url>http://localhost:8080/hotelservice?wsdl</wsdl.url>
+        <generated.dir>${project.build.directory}/generated-sources/wsimport</generated.dir>
+    </properties>
+
+    <build>
+        <plugins>
+            <!-- force JDK 8 pour wsimport via toolchains -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution><goals><goal>toolchain</goal></goals></execution>
+                </executions>
+                <configuration>
+                    <toolchains>
+                        <jdk>
+                            <version>1.8</version>
+                            <vendor>any</vendor>
+                        </jdk>
+                    </toolchains>
+                </configuration>
+            </plugin>
+
+            <!-- Génère les stubs JAX-WS depuis le WSDL -->
+            <!-- moved into profile 'generate-stubs' to avoid failing build when services aren't running -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                    <execution>
+                        <id>run-client</id>
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <mainClass>org.examples.client.ClientMain</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>run-lister</id>
+                        <goals><goal>java</goal></goals>
+                        <phase>none</phase>
+                        <configuration>
+                            <mainClass>org.examples.client.CatalogLister</mainClass>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>run-gui</id>
+                        <goals><goal>java</goal></goals>
+                        <phase>none</phase>
+                        <configuration>
+                            <mainClass>org.examples.client.gui.HotelClientGUI</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-impl</artifactId>
+            <version>2.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.activation</groupId>
+            <artifactId>javax.activation</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+        <!-- JAX-WS API for runtime SOAP classes (SOAPFaultException) -->
+        <dependency>
+            <groupId>javax.xml.ws</groupId>
+            <artifactId>jaxws-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
+
+        <!-- JCalendar pour le sélecteur de dates dans l'interface graphique -->
+        <dependency>
+            <groupId>com.toedter</groupId>
+            <artifactId>jcalendar</artifactId>
+            <version>1.4</version>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>generate-stubs</id>
+            <activation>
+                <property>
+                    <name>generate.stubs</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>jaxws-maven-plugin</artifactId>
+                        <version>2.6</version>
+                        <executions>
+                            <execution>
+                                <id>generate-stubs</id>
+                                <goals><goal>wsimport</goal></goals>
+                                <configuration>
+                                    <wsdlUrls>
+                                        <wsdlUrl>${wsdl.url}</wsdlUrl>
+                                    </wsdlUrls>
+                                    <packageName>org.examples.client.stub</packageName>
+                                    <sourceDestDir>${generated.dir}</sourceDestDir>
+                                    <xnocompile>true</xnocompile>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <!-- add generated sources to compilation -->
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>3.3.0</version>
+                        <executions>
+                            <execution>
+                                <id>add-source</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>${generated.dir}</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

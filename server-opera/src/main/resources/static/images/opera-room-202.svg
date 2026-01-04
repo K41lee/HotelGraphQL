@@ -1,0 +1,7 @@
+<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="300" fill="#e6e6fa"/>
+  <rect x="50" y="50" width="300" height="200" fill="#9370db" stroke="#4b0082" stroke-width="3"/>
+  <text x="200" y="150" font-size="24" text-anchor="middle" fill="#4b0082">Luxe Opéra - 202</text>
+  <text x="200" y="180" font-size="18" text-anchor="middle" fill="#4b0082">Suite Deluxe</text>
+  <text x="200" y="210" font-size="16" text-anchor="middle" fill="#4b0082">2 lits • 240€/nuit</text>
+</svg>
