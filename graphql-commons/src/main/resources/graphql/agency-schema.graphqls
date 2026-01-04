@@ -1,0 +1,251 @@
+# ====================================
+# Agency Schema - Services d'Agence
+# ====================================
+# Ce schéma définit les services spécifiques aux agences
+# Migration de agency.proto vers GraphQL
+
+# ====================================
+# Enums pour les Agences
+# ====================================
+
+"""
+Champ de tri pour les offres
+"""
+enum SortField {
+  PRICE
+  STARS
+  DISTANCE
+  NAME
+}
+
+"""
+Ordre de tri
+"""
+enum SortOrder {
+  ASC
+  DESC
+}
+
+# ====================================
+# Input Types
+# ====================================
+
+"""
+Critères de tri pour les résultats
+"""
+input SortCriteria {
+  field: SortField!
+  order: SortOrder!
+}
+
+"""
+Input pour la recherche via agence (tous les hôtels)
+"""
+input AgencySearchInput {
+  city: String!
+  arrivalDate: Date!
+  departureDate: Date!
+  numPersons: Int!
+  hotelIds: [String!]
+  includeUnavailable: Boolean = false
+  sort: SortCriteria
+  maxResults: Int
+  agencyName: String!
+  priceRange: PriceRange
+  category: String
+  minStars: Int
+}
+
+"""
+Input pour comparer des offres
+"""
+input ComparisonInput {
+  offerIds: [String!]!
+  criteria: [String!]
+}
+
+"""
+Input pour obtenir les statistiques d'agence
+"""
+input StatsInput {
+  agencyName: String!
+  dateRange: DateRange
+  includeHotelBreakdown: Boolean = false
+}
+
+"""
+Input pour réservation via agence (avec commission)
+"""
+input AgencyReservationInput {
+  hotelId: String!
+  roomId: String!
+  clientName: String!
+  clientFirstName: String!
+  clientCard: String!
+  arrivalDate: Date!
+  departureDate: Date!
+  numPersons: Int!
+  specialRequests: String
+  agencyName: String!
+  commissionRate: Float!
+  agencyReference: String
+}
+
+# ====================================
+# Types de Réponse
+# ====================================
+
+"""
+Réponse de recherche synchrone via agence
+"""
+type AgencySearchResponse {
+  offers: [Offer!]!
+  totalCount: Int!
+  hotelCounts: [HotelCount!]!
+  hotelErrors: [HotelError!]!
+  searchDurationMs: Long!
+}
+
+"""
+Nombre d'offres par hôtel
+"""
+type HotelCount {
+  hotelId: String!
+  count: Int!
+}
+
+"""
+Erreur par hôtel
+"""
+type HotelError {
+  hotelId: String!
+  error: String!
+}
+
+"""
+Comparaison d'une offre
+"""
+type OfferComparison {
+  offer: Offer!
+  valueScore: Float!
+  pros: [String!]!
+  cons: [String!]!
+  comparisonDetails: [ComparisonDetail!]!
+}
+
+"""
+Détail de comparaison
+"""
+type ComparisonDetail {
+  key: String!
+  value: String!
+}
+
+"""
+Recommandation d'offre
+"""
+type OfferRecommendation {
+  bestOffer: Offer!
+  reason: String!
+  confidenceScore: Float!
+}
+
+"""
+Réponse de comparaison d'offres
+"""
+type ComparisonResponse {
+  comparisons: [OfferComparison!]!
+  recommendation: OfferRecommendation
+}
+
+"""
+Informations sur un hôtel partenaire
+"""
+type PartnerHotel {
+  hotel: HotelInfo!
+  commissionRate: Float!
+  active: Boolean!
+  totalReservations: Int
+  totalRevenue: Float
+  partnershipSince: Long
+}
+
+"""
+Réponse avec liste des hôtels partenaires
+"""
+type PartnerHotelsResponse {
+  hotels: [PartnerHotel!]!
+  totalPartners: Int!
+}
+
+"""
+Statistiques de l'agence
+"""
+type AgencyStats {
+  agencyName: String!
+  totalSearches: Int!
+  totalReservations: Int!
+  totalRevenue: Float!
+  totalCommission: Float!
+  reservationsByHotel: [ReservationByHotel!]!
+  revenueByHotel: [RevenueByHotel!]!
+  averageReservationValue: Float!
+  conversionRate: Float!
+}
+
+"""
+Réservations par hôtel
+"""
+type ReservationByHotel {
+  hotelId: String!
+  count: Int!
+}
+
+"""
+Revenu par hôtel
+"""
+type RevenueByHotel {
+  hotelId: String!
+  revenue: Float!
+}
+
+# ====================================
+# Extension des Queries
+# ====================================
+
+extend type Query {
+  """
+  Rechercher dans tous les hôtels partenaires (synchrone)
+  """
+  searchAllHotels(input: AgencySearchInput!): AgencySearchResponse!
+
+  """
+  Comparer plusieurs offres
+  """
+  compareOffers(input: ComparisonInput!): ComparisonResponse!
+
+  """
+  Obtenir la liste des hôtels partenaires
+  """
+  partnerHotels(
+    agencyName: String!
+    includeStats: Boolean = false
+  ): PartnerHotelsResponse!
+
+  """
+  Obtenir les statistiques de l'agence
+  """
+  agencyStats(input: StatsInput!): AgencyStats!
+}
+
+# ====================================
+# Extension des Mutations
+# ====================================
+
+extend type Mutation {
+  """
+  Faire une réservation via l'agence (avec commission)
+  """
+  makeReservationViaAgency(input: AgencyReservationInput!): Reservation!
+}
+

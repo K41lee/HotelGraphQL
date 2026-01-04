@@ -1,0 +1,218 @@
+syntax = "proto3";
+
+package org.examples.hotel.grpc;
+
+import "common.proto";
+
+option java_multiple_files = true;
+option java_package = "org.examples.hotel.grpc";
+option java_outer_classname = "HotelServiceProto";
+
+/**
+ * Service principal pour la gestion des hôtels
+ * Remplace les services SOAP et REST existants
+ */
+service HotelService {
+  // Obtenir le catalogue d'un hôtel (informations + chambres disponibles)
+  rpc GetCatalog(CatalogRequest) returns (HotelCatalog);
+
+  // Rechercher des offres selon des critères
+  rpc SearchOffers(SearchRequest) returns (OffersResponse);
+
+  // Créer une réservation
+  rpc MakeReservation(ReservationRequest) returns (Reservation);
+
+  // Obtenir les détails d'une réservation existante
+  rpc GetReservation(ReservationQuery) returns (Reservation);
+
+  // Annuler une réservation
+  rpc CancelReservation(CancellationRequest) returns (CancellationResponse);
+
+  // Health check
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+// ==================== Messages de Requête ====================
+
+/**
+ * Requête pour obtenir le catalogue
+ */
+message CatalogRequest {
+  string hotel_id = 1;  // Identifiant de l'hôtel
+  bool include_images = 2;  // Inclure les images
+  bool include_unavailable_rooms = 3;  // Inclure les chambres non disponibles
+}
+
+/**
+ * Requête de recherche d'offres
+ */
+message SearchRequest {
+  string hotel_id = 1;  // Optionnel si appelé par agence
+  string city = 2;  // Ville de recherche
+  DateProto arrival_date = 3;  // Date d'arrivée
+  DateProto departure_date = 4;  // Date de départ
+  int32 num_persons = 5;  // Nombre de personnes
+  PriceRange price_range = 6;  // Fourchette de prix
+  string category = 7;  // Catégorie (SINGLE, DOUBLE, SUITE...)
+  int32 min_stars = 8;  // Nombre minimum d'étoiles
+  string agency = 9;  // Nom de l'agence (pour appliquer remise)
+}
+
+/**
+ * Requête de réservation
+ */
+message ReservationRequest {
+  string hotel_id = 1;
+  string room_id = 2;  // Identifiant de la chambre
+  string client_name = 3;  // Nom de famille
+  string client_first_name = 4;  // Prénom
+  string client_card = 5;  // Numéro de carte bancaire
+  DateProto arrival_date = 6;
+  DateProto departure_date = 7;
+  int32 num_persons = 8;
+  string special_requests = 9;  // Demandes spéciales
+  string agency_name = 10;  // Pour appliquer la commission
+}
+
+/**
+ * Requête pour obtenir une réservation
+ */
+message ReservationQuery {
+  string reservation_id = 1;
+  string hotel_id = 2;  // Optionnel
+  string client_email = 3;  // Alternative à reservation_id
+}
+
+/**
+ * Requête d'annulation
+ */
+message CancellationRequest {
+  string reservation_id = 1;
+  string reason = 2;
+}
+
+/**
+ * Requête de ping
+ */
+message PingRequest {
+  string message = 1;
+}
+
+// ==================== Messages de Réponse ====================
+
+/**
+ * Catalogue complet d'un hôtel
+ */
+message HotelCatalog {
+  HotelInfo hotel = 1;
+  repeated RoomType room_types = 2;
+  int32 total_rooms = 3;
+}
+
+/**
+ * Informations sur un hôtel
+ */
+message HotelInfo {
+  string id = 1;
+  string name = 2;
+  Address address = 3;
+  int32 stars = 4;
+  string description = 5;
+  repeated string amenities = 6;  // Équipements (wifi, piscine, etc.)
+  repeated ImageInfo images = 7;
+  string phone = 8;
+  string email = 9;
+  GeoLocation location = 10;
+}
+
+/**
+ * Type de chambre
+ */
+message RoomType {
+  string id = 1;
+  string category = 2;  // SINGLE, DOUBLE, SUITE, etc.
+  int32 capacity = 3;  // Nombre de personnes max
+  double price_per_night = 4;
+  string description = 5;
+  repeated string features = 6;  // TV, climatisation, etc.
+  int32 available_count = 7;  // Nombre de chambres disponibles
+  repeated ImageInfo images = 8;
+  double surface_m2 = 9;
+}
+
+/**
+ * Réponse avec liste d'offres
+ */
+message OffersResponse {
+  repeated Offer offers = 1;
+  int32 total_count = 2;
+  SearchRequest original_request = 3;  // Echo de la requête
+}
+
+/**
+ * Offre d'hôtel
+ */
+message Offer {
+  string offer_id = 1;
+  HotelInfo hotel = 2;
+  RoomType room = 3;
+  DateProto arrival_date = 4;
+  DateProto departure_date = 5;
+  int32 num_nights = 6;
+  double price_per_night = 7;
+  double total_price = 8;
+  double discount_rate = 9;  // Taux de remise (0.0 à 1.0)
+  double final_price = 10;  // Prix après remise
+  bool available = 11;
+  string currency = 12;  // EUR, USD, etc.
+}
+
+/**
+ * Réservation
+ */
+message Reservation {
+  enum ReservationStatus {
+    RESERVATION_STATUS_UNKNOWN = 0;
+    RESERVATION_STATUS_PENDING = 1;
+    RESERVATION_STATUS_CONFIRMED = 2;
+    RESERVATION_STATUS_CANCELLED = 3;
+    RESERVATION_STATUS_COMPLETED = 4;
+  }
+
+  string reservation_id = 1;
+  string hotel_id = 2;
+  HotelInfo hotel = 3;
+  RoomType room = 4;
+  string client_name = 5;
+  string client_email = 6;
+  string client_phone = 7;
+  DateProto arrival_date = 8;
+  DateProto departure_date = 9;
+  int32 num_persons = 10;
+  double total_price = 11;
+  ReservationStatus status = 12;
+  int64 created_at = 13;  // Timestamp en millisecondes
+  int64 updated_at = 14;
+  string special_requests = 15;
+  string confirmation_code = 16;
+}
+
+/**
+ * Réponse d'annulation
+ */
+message CancellationResponse {
+  bool success = 1;
+  string message = 2;
+  Reservation cancelled_reservation = 3;
+  double refund_amount = 4;
+}
+
+/**
+ * Réponse de ping
+ */
+message PingResponse {
+  string message = 1;
+  int64 timestamp = 2;
+  string server_id = 3;
+}
+

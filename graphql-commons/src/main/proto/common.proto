@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package org.examples.hotel.grpc;
+
+option java_multiple_files = true;
+option java_package = "org.examples.hotel.grpc.common";
+option java_outer_classname = "CommonProto";
+
+// Types communs utilisés dans tous les services
+
+/**
+ * Représente une date (sans heure)
+ */
+message DateProto {
+  int32 year = 1;
+  int32 month = 2;  // 1-12
+  int32 day = 3;    // 1-31
+}
+
+/**
+ * Représente une période de dates
+ */
+message DateRange {
+  DateProto start = 1;
+  DateProto end = 2;
+}
+
+/**
+ * Fourchette de prix
+ */
+message PriceRange {
+  int32 min_price = 1;
+  int32 max_price = 2;
+}
+
+/**
+ * Adresse complète
+ */
+message Address {
+  string street = 1;
+  string city = 2;
+  string postal_code = 3;
+  string country = 4;
+}
+
+/**
+ * Image avec métadonnées
+ */
+message ImageInfo {
+  string url = 1;
+  string description = 2;
+  int32 width = 3;
+  int32 height = 4;
+}
+
+/**
+ * Erreur de service structurée
+ */
+message ServiceError {
+  enum ErrorCode {
+    UNKNOWN = 0;
+    NOT_FOUND = 1;
+    INVALID_ARGUMENT = 2;
+    ALREADY_EXISTS = 3;
+    PERMISSION_DENIED = 4;
+    UNAVAILABLE = 5;
+    INTERNAL = 6;
+    DEADLINE_EXCEEDED = 7;
+  }
+
+  ErrorCode code = 1;
+  string message = 2;
+  string details = 3;
+}
+
+/**
+ * Statut d'une opération
+ */
+enum OperationStatus {
+  OPERATION_STATUS_UNKNOWN = 0;
+  OPERATION_STATUS_SUCCESS = 1;
+  OPERATION_STATUS_PENDING = 2;
+  OPERATION_STATUS_FAILED = 3;
+  OPERATION_STATUS_CANCELLED = 4;
+}
+
+/**
+ * Métadonnées de pagination
+ */
+message Pagination {
+  int32 page = 1;
+  int32 page_size = 2;
+  int32 total_items = 3;
+  int32 total_pages = 4;
+}
+
+/**
+ * Coordonnées GPS
+ */
+message GeoLocation {
+  double latitude = 1;
+  double longitude = 2;
+}
+

@@ -1,0 +1,221 @@
+# ====================================
+# Hotel Schema - Service Principal
+# ====================================
+# Ce schéma définit les services des hôtels (Opera & Rivage)
+# Migration de hotel.proto vers GraphQL
+
+# ====================================
+# Types Principaux
+# ====================================
+
+"""
+Informations complètes sur un hôtel
+"""
+type HotelInfo {
+  id: String!
+  name: String!
+  address: Address!
+  stars: Int!
+  description: String
+  amenities: [String!]!
+  images: [ImageInfo!]!
+  phone: String
+  email: String
+  location: GeoLocation
+}
+
+"""
+Type de chambre avec disponibilités
+"""
+type RoomType {
+  id: String!
+  category: String!
+  capacity: Int!
+  pricePerNight: Float!
+  description: String
+  features: [String!]!
+  availableCount: Int!
+  images: [ImageInfo!]!
+  surfaceM2: Float
+}
+
+"""
+Catalogue complet d'un hôtel
+"""
+type HotelCatalog {
+  hotel: HotelInfo!
+  roomTypes: [RoomType!]!
+  totalRooms: Int!
+}
+
+"""
+Offre d'hôtel avec prix calculé
+"""
+type Offer {
+  offerId: String!
+  hotel: HotelInfo!
+  room: RoomType!
+  arrivalDate: Date!
+  departureDate: Date!
+  numNights: Int!
+  pricePerNight: Float!
+  totalPrice: Float!
+  discountRate: Float
+  finalPrice: Float!
+  available: Boolean!
+  currency: String!
+}
+
+"""
+Réponse de recherche d'offres
+"""
+type OffersResponse {
+  offers: [Offer!]!
+  totalCount: Int!
+}
+
+"""
+Statut d'une réservation
+"""
+enum ReservationStatus {
+  UNKNOWN
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+"""
+Réservation complète
+"""
+type Reservation {
+  reservationId: String!
+  hotelId: String!
+  hotel: HotelInfo
+  room: RoomType
+  clientName: String!
+  clientEmail: String
+  clientPhone: String
+  arrivalDate: Date!
+  departureDate: Date!
+  numPersons: Int!
+  totalPrice: Float!
+  status: ReservationStatus!
+  createdAt: Long!
+  updatedAt: Long
+  specialRequests: String
+  confirmationCode: String
+}
+
+"""
+Réponse d'annulation de réservation
+"""
+type CancellationResponse {
+  success: Boolean!
+  message: String!
+  cancelledReservation: Reservation
+  refundAmount: Float
+}
+
+"""
+Réponse du health check
+"""
+type PingResponse {
+  message: String!
+  timestamp: Long!
+  serverId: String!
+}
+
+# ====================================
+# Input Types pour Mutations/Queries
+# ====================================
+
+"""
+Input pour la recherche d'offres
+"""
+input SearchOffersInput {
+  hotelId: String
+  city: String!
+  arrivalDate: Date!
+  departureDate: Date!
+  numPersons: Int!
+  priceRange: PriceRange
+  category: String
+  minStars: Int
+  agency: String
+}
+
+"""
+Input pour créer une réservation
+"""
+input ReservationInput {
+  hotelId: String!
+  roomId: String!
+  clientName: String!
+  clientFirstName: String!
+  clientCard: String!
+  arrivalDate: Date!
+  departureDate: Date!
+  numPersons: Int!
+  specialRequests: String
+  agencyName: String
+}
+
+"""
+Input pour annuler une réservation
+"""
+input CancellationInput {
+  reservationId: String!
+  reason: String
+}
+
+# ====================================
+# Queries (Lecture)
+# ====================================
+
+type Query {
+  """
+  Health check - Test de connectivité
+  """
+  ping(message: String): PingResponse!
+
+  """
+  Obtenir le catalogue complet d'un hôtel
+  """
+  hotelCatalog(
+    hotelId: String!
+    includeImages: Boolean = false
+    includeUnavailableRooms: Boolean = false
+  ): HotelCatalog!
+
+  """
+  Rechercher des offres selon des critères
+  """
+  searchOffers(input: SearchOffersInput!): OffersResponse!
+
+  """
+  Obtenir les détails d'une réservation existante
+  """
+  reservation(
+    reservationId: String
+    hotelId: String
+    clientEmail: String
+  ): Reservation
+}
+
+# ====================================
+# Mutations (Écriture)
+# ====================================
+
+type Mutation {
+  """
+  Créer une nouvelle réservation
+  """
+  makeReservation(input: ReservationInput!): Reservation!
+
+  """
+  Annuler une réservation existante
+  """
+  cancelReservation(input: CancellationInput!): CancellationResponse!
+}
+

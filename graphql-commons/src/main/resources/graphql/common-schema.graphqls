@@ -1,0 +1,155 @@
+# ====================================
+# Common Schema - Types Partagés
+# ====================================
+# Ce schéma définit les types communs utilisés par tous les services
+# Migration de common.proto vers GraphQL
+
+# Scalars personnalisés
+scalar Date
+scalar DateTime
+scalar Long
+
+# ====================================
+# Types de Base
+# ====================================
+
+"""
+Adresse complète
+"""
+type Address {
+  street: String!
+  city: String!
+  postalCode: String!
+  country: String!
+}
+
+"""
+Input pour créer/modifier une adresse
+"""
+input AddressInput {
+  street: String!
+  city: String!
+  postalCode: String!
+  country: String!
+}
+
+"""
+Information sur une image avec métadonnées
+"""
+type ImageInfo {
+  url: String!
+  description: String
+  width: Int
+  height: Int
+}
+
+"""
+Input pour une image
+"""
+input ImageInfoInput {
+  url: String!
+  description: String
+  width: Int
+  height: Int
+}
+
+"""
+Coordonnées GPS
+"""
+type GeoLocation {
+  latitude: Float!
+  longitude: Float!
+}
+
+"""
+Input pour les coordonnées GPS
+"""
+input GeoLocationInput {
+  latitude: Float!
+  longitude: Float!
+}
+
+# ====================================
+# Input Types pour Requêtes
+# ====================================
+
+"""
+Période de dates (pour les recherches)
+"""
+input DateRange {
+  start: Date!
+  end: Date!
+}
+
+"""
+Fourchette de prix (pour filtrer les recherches)
+"""
+input PriceRange {
+  minPrice: Int!
+  maxPrice: Int!
+}
+
+# ====================================
+# Enums
+# ====================================
+
+"""
+Statut d'une opération
+"""
+enum OperationStatus {
+  UNKNOWN
+  SUCCESS
+  PENDING
+  FAILED
+  CANCELLED
+}
+
+"""
+Codes d'erreur standardisés
+"""
+enum ErrorCode {
+  UNKNOWN
+  NOT_FOUND
+  INVALID_ARGUMENT
+  ALREADY_EXISTS
+  PERMISSION_DENIED
+  UNAVAILABLE
+  INTERNAL
+  DEADLINE_EXCEEDED
+}
+
+# ====================================
+# Types pour Gestion d'Erreurs
+# ====================================
+
+"""
+Erreur de service structurée
+"""
+type ServiceError {
+  code: ErrorCode!
+  message: String!
+  details: String
+}
+
+# ====================================
+# Pagination
+# ====================================
+
+"""
+Métadonnées de pagination
+"""
+type Pagination {
+  page: Int!
+  pageSize: Int!
+  totalItems: Int!
+  totalPages: Int!
+}
+
+"""
+Input pour la pagination
+"""
+input PaginationInput {
+  page: Int = 1
+  pageSize: Int = 20
+}
+
