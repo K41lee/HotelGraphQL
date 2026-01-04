@@ -1,7 +1,7 @@
 package org.examples.agency;
 
 import dto.*;
-// import org.examples.agency.grpc.HotelGrpcClient;  // TODO: Remplacer par HotelGraphQLClient
+import org.examples.agency.graphql.HotelGraphQLClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +12,15 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * Service TCP de l'agence - EN MIGRATION vers GraphQL
- * (gRPC supprimé, SOAP supprimé, REST supprimé)
+ * Service TCP de l'agence - MIGRATION vers GraphQL COMPLÉTÉE
+ * (gRPC supprimé, remplacé par GraphQL)
  */
 @Service
 public class AgencyService {
   private static final Logger log = LoggerFactory.getLogger(AgencyService.class);
 
-  // @Autowired
-  // private HotelGrpcClient grpcClient;  // TODO: Remplacer par HotelGraphQLClient
+  @Autowired
+  private HotelGraphQLClient graphqlClient;
 
   @Value("${agency.discount.rate:0.10}")
   private double discountRate;
@@ -52,23 +52,38 @@ public class AgencyService {
   private Map<String,Object> getCatalog() {
     Set<String> cities = new LinkedHashSet<>();
 
-    // TODO: Récupérer les catalogues via GraphQL (remplacer gRPC)
-    /* try {
-      List<CatalogDTO> catalogs = grpcClient.getAllCatalogs();
-      log.info("[AGENCY] Got {} catalogs via GraphQL", catalogs.size());
+    // Récupérer les catalogues via GraphQL
+    try {
+      Map<String, Object> operaCatalog = graphqlClient.getCatalog("opera");
+      Map<String, Object> rivageCatalog = graphqlClient.getCatalog("rivage");
 
-      for (CatalogDTO catalog : catalogs) {
-        if (catalog != null && catalog.getCities() != null) {
-          cities.addAll(catalog.getCities());
+      log.info("[AGENCY] Got catalogs via GraphQL");
+
+      // Extraire les villes des catalogues
+      @SuppressWarnings("unchecked")
+      Map<String, Object> operaHotel = (Map<String, Object>) operaCatalog.get("hotel");
+      if (operaHotel != null) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> address = (Map<String, Object>) operaHotel.get("address");
+        if (address != null && address.get("city") != null) {
+          cities.add((String) address.get("city"));
+        }
+      }
+
+      @SuppressWarnings("unchecked")
+      Map<String, Object> rivageHotel = (Map<String, Object>) rivageCatalog.get("hotel");
+      if (rivageHotel != null) {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> address = (Map<String, Object>) rivageHotel.get("address");
+        if (address != null && address.get("city") != null) {
+          cities.add((String) address.get("city"));
         }
       }
     } catch (Exception e) {
       log.warn("[AGENCY-CALL] getCatalog via GraphQL failed: {}", e.toString());
-    } */
-
-    // Données temporaires pour test
-    cities.add("Montpellier");
-    cities.add("Paris");
+      // Fallback sur données par défaut
+      cities.add("Montpellier");
+    }
 
     Map<String,Object> data = new LinkedHashMap<>();
     data.put("name", "Agence Centrale");
@@ -90,53 +105,81 @@ public class AgencyService {
 
     List<Map<String,Object>> offers = new ArrayList<>();
 
-    // TODO: Utiliser GraphQL pour rechercher sur tous les hôtels (remplacer gRPC)
-    /* try {
-      Map<String, List<OfferDTO>> allOffers = grpcClient.searchAllOffers(ville, from, to, nb, agencyId);
-      log.info("[AGENCY] Got offers from {} hotels via GraphQL", allOffers.size());
+    // Utiliser GraphQL pour rechercher sur tous les hôtels
+    try {
+      log.info("[AGENCY] Calling graphqlClient.searchOffers...");
+      List<Map<String, Object>> allOffers = graphqlClient.searchOffers(ville, from, to, nb, agencyId);
+      log.info("[AGENCY] Got {} offers via GraphQL", allOffers.size());
 
-      for (Map.Entry<String, List<OfferDTO>> entry : allOffers.entrySet()) {
-        for (OfferDTO o : entry.getValue()) {
-          // ⭐ Appliquer la remise de l'agence au prix
-          int originalPrice = o.getPrixTotal();
-          int discountedPrice = (int) (originalPrice * (1 - discountRate));
-          o.setPrixTotal(discountedPrice);
+      if (allOffers.isEmpty()) {
+        log.warn("[AGENCY] ⚠️  No offers received from GraphQL - check hotel servers and GraphQL client logs");
+      }
 
-          log.debug("[AGENCY] Applying discount: {} -> {} ({}% off)",
-                   originalPrice, discountedPrice, (int)(discountRate * 100));
-
-          Map<String,Object> m = new LinkedHashMap<>();
-          m.put("hotelName", o.getHotelName());
-          m.put("categorie", o.getCategorie());
-          m.put("nbEtoiles", o.getNbEtoiles());
-          if (o.getAddress() != null) {
-            Map<String,Object> a = new LinkedHashMap<>();
-            a.put("pays", o.getAddress().getPays());
-            a.put("ville", o.getAddress().getVille());
-            a.put("rue", o.getAddress().getRue());
-            m.put("address", a);
-          }
-          if (o.getRoom() != null) {
-            Map<String,Object> r = new LinkedHashMap<>();
-            r.put("numero", o.getRoom().getNumero());
-            r.put("nbLits", o.getRoom().getNbLits());
-            r.put("prixParNuit", o.getRoom().getPrixParNuit());
-            if (o.getRoom().getImageUrl() != null) {
-              r.put("imageUrl", o.getRoom().getImageUrl()); // ⭐ Ajouter l'image
-            }
-            m.put("room", r);
-          }
-          m.put("nbLits", o.getNbLits());
-          m.put("prixTotal", o.getPrixTotal()); // prixTotal contient déjà le prix avec remise
-          m.put("offerId", o.getOfferId());
-          offers.add(m);
+      for (Map<String, Object> offerData : allOffers) {
+        log.debug("[AGENCY] Processing offer: {}", offerData);
+        // Extraire le prix total
+        Object totalPriceObj = offerData.get("totalPrice");
+        double originalPrice = 0.0;
+        if (totalPriceObj instanceof Double) {
+          originalPrice = (Double) totalPriceObj;
+        } else if (totalPriceObj instanceof Integer) {
+          originalPrice = ((Integer) totalPriceObj).doubleValue();
         }
+
+        // Appliquer la remise de l'agence
+        double discountedPrice = originalPrice * (1 - discountRate);
+
+        log.debug("[AGENCY] Applying discount: {} -> {} ({}% off)",
+                 originalPrice, discountedPrice, (int)(discountRate * 100));
+
+        // Construire l'offre pour le client TCP
+        Map<String,Object> m = new LinkedHashMap<>();
+
+        // Hotel info
+        @SuppressWarnings("unchecked")
+        Map<String, Object> hotel = (Map<String, Object>) offerData.get("hotel");
+        if (hotel != null) {
+          m.put("hotelName", hotel.get("name"));
+          m.put("nbEtoiles", hotel.get("stars"));
+
+          @SuppressWarnings("unchecked")
+          Map<String, Object> address = (Map<String, Object>) hotel.get("address");
+          if (address != null) {
+            m.put("ville", address.get("city"));
+          }
+        }
+
+        // Room info
+        @SuppressWarnings("unchecked")
+        Map<String, Object> room = (Map<String, Object>) offerData.get("room");
+        if (room != null) {
+          m.put("categorie", room.get("category"));
+
+          // ⭐ IMPORTANT: Ajouter le numéro de chambre directement dans l'offre pour le GUI
+          m.put("numero", room.get("id"));
+
+          Map<String,Object> r = new LinkedHashMap<>();
+          r.put("numero", room.get("id"));
+          r.put("nbLits", room.get("capacity"));
+          r.put("prixParNuit", room.get("pricePerNight"));
+
+          @SuppressWarnings("unchecked")
+          List<Map<String, Object>> images = (List<Map<String, Object>>) room.get("images");
+          if (images != null && !images.isEmpty()) {
+            r.put("imageUrl", images.get(0).get("url"));
+          }
+          m.put("room", r);
+          m.put("nbLits", room.get("capacity"));
+        }
+
+        m.put("prixTotal", (int) discountedPrice);
+        m.put("offerId", offerData.get("offerId"));
+        offers.add(m);
       }
     } catch (Exception e) {
-      log.warn("[AGENCY-CALL] searchOffers via GraphQL failed: {}", e.toString());
-    } */
-
-    log.warn("[AGENCY] searchOffers temporarily disabled during GraphQL migration");
+      log.error("[AGENCY-CALL] searchOffers via GraphQL failed: {}", e.getMessage(), e);
+      // L'exception est catchée mais on continue avec une liste vide
+    }
 
     Map<String,Object> data = new LinkedHashMap<>();
     data.put("offers", offers);
@@ -153,33 +196,28 @@ public class AgencyService {
 
     log.info("[AGENCY] makeReservation REÇU depuis TCP - hotelCode='{}' offerId='{}' agencyId='{}' nom='{}' prenom='{}' carte='{}'",
              hotelCode, offerId, agencyId, nom, prenom, maskCard(carte));
-    log.info("[AGENCY] ⭐ TRACE agencyId depuis client TCP: '{}'", agencyId);
 
-    // ⭐ Extraire hotelCode et roomNumber de l'offerId (format: opera-201-timestamp)
-    int roomNumber = 0;
+    // Extraire hotelCode et roomNumber de l'offerId (format: opera-201-timestamp)
+    String roomId = null;
     if (offerId != null && offerId.contains("-")) {
       String[] parts = offerId.split("-");
       if (parts.length >= 2) {
-        // ⭐ Si hotelCode n'est pas fourni, l'extraire de l'offerId
         if (hotelCode == null || hotelCode.isEmpty()) {
           hotelCode = parts[0];
           log.info("[AGENCY] hotelCode extrait de offerId: '{}'", hotelCode);
         }
-        try {
-          roomNumber = Integer.parseInt(parts[1]);
-        } catch (NumberFormatException e) {
-          log.warn("[AGENCY] Invalid room number in offerId: {}", offerId);
-        }
+        roomId = parts[1];
       }
     }
 
-    log.info("[AGENCY] makeReservation APRÈS extraction - hotelCode='{}' roomNumber={}", hotelCode, roomNumber);
+    log.info("[AGENCY] makeReservation APRÈS extraction - hotelCode='{}' roomId={}", hotelCode, roomId);
 
     // Extraire les dates du payload
     String arriveeStr = str(payload.get("arrivee"));
     String departStr = str(payload.get("depart"));
     LocalDate arrivee = null;
     LocalDate depart = null;
+    int nbPersonnes = num(payload.get("nbPersonnes"), 1);
 
     try {
       if (arriveeStr != null) arrivee = LocalDate.parse(arriveeStr);
@@ -188,26 +226,33 @@ public class AgencyService {
       log.warn("[AGENCY] Invalid dates: {} - {}", arriveeStr, departStr);
     }
 
-    // TODO: Appeler le service GraphQL pour faire la réservation (remplacer gRPC)
-    /* ReservationConfirmationDTO confirmation = grpcClient.makeReservation(
-      hotelCode, roomNumber, nom, prenom, carte, arrivee, depart, agencyId
-    ); */
+    // Appeler le service GraphQL pour faire la réservation
+    try {
+      Map<String, Object> confirmation = graphqlClient.makeReservation(
+        hotelCode, roomId, nom, prenom, carte, arrivee, depart, nbPersonnes
+      );
 
-    // Réponse temporaire pendant la migration
-    log.warn("[AGENCY] makeReservation temporarily disabled during GraphQL migration");
+      log.info("[AGENCY] ✅ Reservation completed via GraphQL: reference={}", confirmation.get("confirmationCode"));
 
-    Map<String,Object> data = new LinkedHashMap<>();
-    data.put("success", false);
-    data.put("message", "Service temporarily unavailable during GraphQL migration");
-    data.put("reference", "TEMP-000");
+      Map<String,Object> data = new LinkedHashMap<>();
+      data.put("success", true);
+      data.put("message", "Reservation confirmed");
+      data.put("reference", confirmation.get("confirmationCode"));
+      data.put("reservationId", confirmation.get("reservationId"));
+      data.put("totalPrice", confirmation.get("totalPrice"));
+      data.put("status", confirmation.get("status"));
 
-    /* if (confirmation.isSuccess()) {
-      log.info("[AGENCY] ✅ Reservation completed via GraphQL: reference={}", confirmation.getId());
-    } else {
-      log.warn("[AGENCY] ❌ Reservation failed: {}", confirmation.getMessage());
-    } */
+      return data;
+    } catch (Exception e) {
+      log.warn("[AGENCY] ❌ Reservation failed: {}", e.getMessage());
 
-    return data;
+      Map<String,Object> data = new LinkedHashMap<>();
+      data.put("success", false);
+      data.put("message", "Reservation failed: " + e.getMessage());
+      data.put("reference", null);
+
+      return data;
+    }
   }
 
 
