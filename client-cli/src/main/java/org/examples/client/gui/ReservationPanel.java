@@ -291,18 +291,37 @@ public class ReservationPanel extends JPanel {
         new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
-                String hotelCode = MiniJson.getString(currentOffer, "hotelCode");
+                // ⭐ Extraire hotelCode de l'offre (depuis hotelName ou offerId)
+                String hotelName = MiniJson.getString(currentOffer, "hotelName");
                 String offerId = MiniJson.getString(currentOffer, "offerId");
-                if (hotelCode == null) hotelCode = MiniJson.getString(currentOffer, "reference");
-                if (offerId == null) offerId = MiniJson.getString(currentOffer, "reference");
+
+                // Déduire hotelCode du nom ou de l'offerId
+                String hotelCode = null;
+                if (hotelName != null) {
+                    hotelCode = hotelName.toLowerCase().contains("opera") ? "opera" : "rivage";
+                } else if (offerId != null && offerId.contains("-")) {
+                    hotelCode = offerId.split("-")[0]; // Extraire de "opera-201-timestamp"
+                }
+
+                System.out.println("[RESERVATION] hotelCode=" + hotelCode + ", offerId=" + offerId);
 
                 // ⭐ Récupérer le nom de l'agence depuis l'offre
                 String agencyName = MiniJson.getString(currentOffer, "_agencyName");
+
+                // ⭐ Récupérer le nombre de personnes depuis l'offre
+                String roomObj = MiniJson.getObject(currentOffer, "room");
+                Integer nbLits = roomObj != null ? MiniJson.getInt(roomObj, "nbLits") : null;
+                int nbPersonnes = nbLits != null ? nbLits : 2; // Par défaut 2 personnes
 
                 // ⭐ Formater les dates au format yyyy-MM-dd
                 SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
                 String arrivee = startDate != null ? dateFormat.format(startDate) : "";
                 String depart = endDate != null ? dateFormat.format(endDate) : "";
+
+                System.out.println("[RESERVATION] Calling reserve: port=" + agencyPort +
+                                 ", hotelCode=" + hotelCode + ", offerId=" + offerId +
+                                 ", agencyName=" + agencyName + ", arrivee=" + arrivee +
+                                 ", depart=" + depart + ", nbPersonnes=" + nbPersonnes);
 
                 // Utilisation de multiAgencyClient avec le port de l'agence d'origine
                 return mainFrame.getMultiAgencyClient().reserve(

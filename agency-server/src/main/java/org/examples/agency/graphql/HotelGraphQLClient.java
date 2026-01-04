@@ -161,8 +161,8 @@ public class HotelGraphQLClient {
     public Map<String, Object> makeReservation(String hotelId, String roomId, String clientName,
                                                String clientFirstName, String clientCard,
                                                LocalDate arrivalDate, LocalDate departureDate,
-                                               int numPersons) {
-        log.info("[GraphQL-CLIENT] makeReservation - hotel={}, room={}", hotelId, roomId);
+                                               int numPersons, String agencyName) {
+        log.info("[GraphQL-CLIENT] makeReservation - hotel={}, room={}, agency={}", hotelId, roomId, agencyName);
 
         String mutation = "mutation MakeReservation($input: ReservationInput!) {" +
                 " makeReservation(input: $input) {" +
@@ -180,6 +180,11 @@ public class HotelGraphQLClient {
         input.put("arrivalDate", arrivalDate.toString());
         input.put("departureDate", departureDate.toString());
         input.put("numPersons", numPersons);
+
+        // ⭐ Ajouter le nom de l'agence
+        if (agencyName != null && !agencyName.isEmpty()) {
+            input.put("agencyName", agencyName);
+        }
 
         Map<String, Object> variables = new HashMap<>();
         variables.put("input", input);

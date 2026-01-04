@@ -25,6 +25,9 @@ public class AgencyService {
   @Value("${agency.discount.rate:0.10}")
   private double discountRate;
 
+  @Value("${agency.name:Unknown Agency}")
+  private String agencyName;
+
   // Les hôtels partenaires sont maintenant gérés par HotelGrpcClient
   // Ports gRPC : opera=9090, rivage=9091
 
@@ -210,11 +213,16 @@ public class AgencyService {
     String nom = str(payload.get("nom"));
     String prenom = str(payload.get("prenom"));
     String carte = str(payload.get("carte"));
+    String arriveeStr = str(payload.get("arrivee"));
+    String departStr = str(payload.get("depart"));
 
-    log.info("[AGENCY] makeReservation REÇU depuis TCP - hotelCode='{}' offerId='{}' agencyId='{}' nom='{}' prenom='{}' carte='{}'",
-             hotelCode, offerId, agencyId, nom, prenom, maskCard(carte));
+    // ⭐ Extraire nbPersonnes du payload si présent
+    int nbPersonnes = num(payload.get("nbPersonnes"), 2);
 
-    // Extraire hotelCode et roomNumber de l'offerId (format: opera-201-timestamp)
+    log.info("[AGENCY] makeReservation REÇU depuis TCP - hotelCode='{}' offerId='{}' agencyId='{}' nom='{}' prenom='{}' carte='{}' arrivee='{}' depart='{}' nbPersonnes={}",
+             hotelCode, offerId, agencyId, nom, prenom, maskCard(carte), arriveeStr, departStr, nbPersonnes);
+
+    // Extraire hotelCode et roomId de l'offerId (format: opera-201-timestamp)
     String roomId = null;
     if (offerId != null && offerId.contains("-")) {
       String[] parts = offerId.split("-");
@@ -224,29 +232,56 @@ public class AgencyService {
           log.info("[AGENCY] hotelCode extrait de offerId: '{}'", hotelCode);
         }
         roomId = parts[1];
+        log.info("[AGENCY] roomId extrait de offerId: '{}'", roomId);
       }
     }
 
-    log.info("[AGENCY] makeReservation APRÈS extraction - hotelCode='{}' roomId={}", hotelCode, roomId);
+    log.info("[AGENCY] makeReservation APRÈS extraction - hotelCode='{}' roomId='{}'", hotelCode, roomId);
 
-    // Extraire les dates du payload
-    String arriveeStr = str(payload.get("arrivee"));
-    String departStr = str(payload.get("depart"));
+    // Parser les dates
     LocalDate arrivee = null;
     LocalDate depart = null;
-    int nbPersonnes = num(payload.get("nbPersonnes"), 1);
-
     try {
-      if (arriveeStr != null) arrivee = LocalDate.parse(arriveeStr);
-      if (departStr != null) depart = LocalDate.parse(departStr);
+      if (arriveeStr != null && !arriveeStr.isEmpty()) {
+        arrivee = LocalDate.parse(arriveeStr);
+        log.info("[AGENCY] Date arrivée parsée: {}", arrivee);
+      }
+      if (departStr != null && !departStr.isEmpty()) {
+        depart = LocalDate.parse(departStr);
+        log.info("[AGENCY] Date départ parsée: {}", depart);
+      }
     } catch (Exception e) {
-      log.warn("[AGENCY] Invalid dates: {} - {}", arriveeStr, departStr);
+      log.error("[AGENCY] ❌ Erreur parsing dates: arrivee='{}', depart='{}'", arriveeStr, departStr, e);
+      Map<String,Object> errorData = new LinkedHashMap<>();
+      errorData.put("success", false);
+      errorData.put("message", "Invalid dates format: " + e.getMessage());
+      return errorData;
+    }
+
+    // Vérifier que les données obligatoires sont présentes
+    if (hotelCode == null || hotelCode.isEmpty()) {
+      log.error("[AGENCY] ❌ hotelCode manquant");
+      Map<String,Object> errorData = new LinkedHashMap<>();
+      errorData.put("success", false);
+      errorData.put("message", "hotelCode is required");
+      return errorData;
+    }
+
+    if (roomId == null || roomId.isEmpty()) {
+      log.error("[AGENCY] ❌ roomId manquant");
+      Map<String,Object> errorData = new LinkedHashMap<>();
+      errorData.put("success", false);
+      errorData.put("message", "roomId is required");
+      return errorData;
     }
 
     // Appeler le service GraphQL pour faire la réservation
     try {
+      log.info("[AGENCY] Calling GraphQL makeReservation: hotel={}, room={}, client={} {}, dates={} to {}, persons={}, agency={}",
+               hotelCode, roomId, prenom, nom, arrivee, depart, nbPersonnes, agencyName);
+
       Map<String, Object> confirmation = graphqlClient.makeReservation(
-        hotelCode, roomId, nom, prenom, carte, arrivee, depart, nbPersonnes
+        hotelCode, roomId, nom, prenom, carte, arrivee, depart, nbPersonnes, agencyName
       );
 
       log.info("[AGENCY] ✅ Reservation completed via GraphQL: reference={}", confirmation.get("confirmationCode"));

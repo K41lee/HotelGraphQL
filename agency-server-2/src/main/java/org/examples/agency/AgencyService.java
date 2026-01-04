@@ -24,6 +24,9 @@ public class AgencyService {
   @Value("${agency.discount.rate:0.10}")
   private double discountRate;
 
+  @Value("${agency.name:Unknown Agency}")
+  private String agencyName;
+
   // Les hôtels partenaires sont maintenant gérés par HotelGrpcClient
   // Ports gRPC : opera=9090, rivage=9091
 
@@ -223,36 +226,67 @@ public class AgencyService {
     // Extraire les dates du payload
     String arriveeStr = str(payload.get("arrivee"));
     String departStr = str(payload.get("depart"));
+    int nbPersonnes = num(payload.get("nbPersonnes"), 2);
     LocalDate arrivee = null;
     LocalDate depart = null;
 
     try {
-      if (arriveeStr != null) arrivee = LocalDate.parse(arriveeStr);
-      if (departStr != null) depart = LocalDate.parse(departStr);
+      if (arriveeStr != null && !arriveeStr.isEmpty()) {
+        arrivee = LocalDate.parse(arriveeStr);
+        log.info("[AGENCY] Date arrivée parsée: {}", arrivee);
+      }
+      if (departStr != null && !departStr.isEmpty()) {
+        depart = LocalDate.parse(departStr);
+        log.info("[AGENCY] Date départ parsée: {}", depart);
+      }
     } catch (Exception e) {
-      log.warn("[AGENCY] Invalid dates: {} - {}", arriveeStr, departStr);
+      log.error("[AGENCY] ❌ Erreur parsing dates: arrivee='{}', depart='{}'", arriveeStr, departStr, e);
+      Map<String,Object> errorData = new LinkedHashMap<>();
+      errorData.put("success", false);
+      errorData.put("message", "Invalid dates format: " + e.getMessage());
+      return errorData;
     }
 
-    // TODO: Appeler le service GraphQL pour faire la réservation (remplacer gRPC)
-    /* ReservationConfirmationDTO confirmation = grpcClient.makeReservation(
-      hotelCode, roomNumber, nom, prenom, carte, arrivee, depart, agencyId
-    ); */
+    // Vérifier données obligatoires
+    if (hotelCode == null || hotelCode.isEmpty() || roomNumber == 0) {
+      log.error("[AGENCY] ❌ Données manquantes: hotelCode='{}', roomNumber={}", hotelCode, roomNumber);
+      Map<String,Object> errorData = new LinkedHashMap<>();
+      errorData.put("success", false);
+      errorData.put("message", "hotelCode and roomNumber are required");
+      return errorData;
+    }
 
-    // Réponse temporaire pendant la migration
-    log.warn("[AGENCY] makeReservation temporarily disabled during GraphQL migration");
+    // ⭐ Appeler le service GraphQL pour faire la réservation
+    try {
+      String roomId = String.valueOf(roomNumber);
+      log.info("[AGENCY] Calling GraphQL makeReservation: hotel={}, room={}, client={} {}, dates={} to {}, persons={}, agency={}",
+               hotelCode, roomId, prenom, nom, arrivee, depart, nbPersonnes, agencyName);
 
-    Map<String,Object> data = new LinkedHashMap<>();
-    data.put("success", false);
-    data.put("message", "Service temporarily unavailable during GraphQL migration");
-    data.put("reference", "TEMP-000");
+      Map<String, Object> confirmation = graphqlClient.makeReservation(
+        hotelCode, roomId, nom, prenom, carte, arrivee, depart, nbPersonnes, agencyName
+      );
 
-    /* if (confirmation.isSuccess()) {
-      log.info("[AGENCY] ✅ Reservation completed via GraphQL: reference={}", confirmation.getId());
-    } else {
-      log.warn("[AGENCY] ❌ Reservation failed: {}", confirmation.getMessage());
-    } */
+      log.info("[AGENCY] ✅ Reservation completed via GraphQL: reference={}", confirmation.get("confirmationCode"));
 
-    return data;
+      Map<String,Object> data = new LinkedHashMap<>();
+      data.put("success", true);
+      data.put("message", "Reservation confirmed");
+      data.put("reference", confirmation.get("confirmationCode"));
+      data.put("reservationId", confirmation.get("reservationId"));
+      data.put("totalPrice", confirmation.get("totalPrice"));
+      data.put("status", confirmation.get("status"));
+
+      return data;
+    } catch (Exception e) {
+      log.error("[AGENCY] ❌ Reservation failed: {}", e.getMessage(), e);
+
+      Map<String,Object> data = new LinkedHashMap<>();
+      data.put("success", false);
+      data.put("message", "Reservation failed: " + e.getMessage());
+      data.put("reference", null);
+
+      return data;
+    }
   }
 
 

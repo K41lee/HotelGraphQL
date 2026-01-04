@@ -380,13 +380,16 @@ public class HotelGraphQLController {
             throw new RuntimeException("Invalid dates: " + arrivalDateStr + " - " + departureDateStr);
         }
 
-        // Vérifier que la chambre existe
-        Optional<ChambreEntity> chambreOpt = chambreRepository.findById((long) roomNumber);
+        // Vérifier que la chambre existe (chercher par numero, pas par id)
+        Optional<ChambreEntity> chambreOpt = chambreRepository.findByNumero(roomNumber);
         if (!chambreOpt.isPresent()) {
-            throw new RuntimeException("Room not found: " + roomNumber);
+            log.error("[GraphQL] makeReservation - Room not found with numero: {}", roomNumber);
+            throw new RuntimeException("Room not found with numero: " + roomNumber);
         }
 
         ChambreEntity chambre = chambreOpt.get();
+        log.info("[GraphQL] makeReservation - Found room: id={}, numero={}, nbLits={}",
+                 chambre.getId(), chambre.getNumero(), chambre.getNbLits());
 
         // Vérifier la disponibilité
         if (!isRoomAvailable(roomNumber, arrivalDate, departureDate)) {
@@ -480,20 +483,43 @@ public class HotelGraphQLController {
             return true;
         }
 
-        List<ReservationEntity> reservations = reservationRepository.findByChambreId((long) roomNumber);
+        // ⭐ Trouver la chambre par son NUMERO pour obtenir son ID
+        Optional<ChambreEntity> chambreOpt = chambreRepository.findByNumero(roomNumber);
+        if (!chambreOpt.isPresent()) {
+            log.warn("[GraphQL] Room with numero {} not found for availability check", roomNumber);
+            return false; // Chambre n'existe pas
+        }
+
+        ChambreEntity chambre = chambreOpt.get();
+        Long chambreId = chambre.getId();
+
+        // Chercher les réservations par l'ID technique de la chambre
+        List<ReservationEntity> reservations = reservationRepository.findByChambreId(chambreId);
+
+        log.debug("[GraphQL] Checking availability for room numero={} (id={}) - Found {} existing reservations",
+                 roomNumber, chambreId, reservations.size());
 
         for (ReservationEntity res : reservations) {
             LocalDate resStart = res.getDebut();
             LocalDate resEnd = res.getFin();
 
-            // Vérifier le chevauchement
-            boolean overlap = !(departureDate.isBefore(resStart) || arrivalDate.isAfter(resEnd) || arrivalDate.isEqual(resEnd));
+            // Vérifier le chevauchement: les périodes se chevauchent si :
+            // - La nouvelle réservation commence avant la fin de l'ancienne
+            // ET
+            // - La nouvelle réservation finit après le début de l'ancienne
+            boolean overlap = !(departureDate.isBefore(resStart) ||
+                              departureDate.isEqual(resStart) ||
+                              arrivalDate.isAfter(resEnd) ||
+                              arrivalDate.isEqual(resEnd));
 
             if (overlap) {
+                log.debug("[GraphQL] ❌ Room {} NOT available - Conflict with reservation {} to {}",
+                         roomNumber, resStart, resEnd);
                 return false;
             }
         }
 
+        log.debug("[GraphQL] ✅ Room {} is available for {} to {}", roomNumber, arrivalDate, departureDate);
         return true;
     }
 
