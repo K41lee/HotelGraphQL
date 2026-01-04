@@ -49,11 +49,11 @@
             <version>${spring-boot.version}</version>
         </dependency>
 
-        <!-- gRPC Server Spring Boot Starter -->
+        <!-- Spring Boot GraphQL Starter -->
         <dependency>
-            <groupId>net.devh</groupId>
-            <artifactId>grpc-server-spring-boot-starter</artifactId>
-            <version>2.14.0.RELEASE</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-graphql</artifactId>
+            <version>${spring-boot.version}</version>
         </dependency>
     </dependencies>
 

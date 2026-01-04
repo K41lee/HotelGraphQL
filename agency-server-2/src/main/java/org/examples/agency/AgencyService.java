@@ -1,7 +1,7 @@
 package org.examples.agency;
 
 import dto.*;
-import org.examples.agency.grpc.HotelGrpcClient;
+// import org.examples.agency.grpc.HotelGrpcClient;  // TODO: Remplacer par HotelGraphQLClient
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,15 +12,15 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * Service TCP de l'agence - utilise maintenant gRPC pour communiquer avec les hôtels
- * (SOAP supprimé, REST supprimé)
+ * Service TCP de l'agence - EN MIGRATION vers GraphQL
+ * (gRPC supprimé, SOAP supprimé, REST supprimé)
  */
 @Service
 public class AgencyService {
   private static final Logger log = LoggerFactory.getLogger(AgencyService.class);
 
-  @Autowired
-  private HotelGrpcClient grpcClient;
+  // @Autowired
+  // private HotelGrpcClient grpcClient;  // TODO: Remplacer par HotelGraphQLClient
 
   @Value("${agency.discount.rate:0.10}")
   private double discountRate;
@@ -52,10 +52,10 @@ public class AgencyService {
   private Map<String,Object> getCatalog() {
     Set<String> cities = new LinkedHashSet<>();
 
-    // Récupérer les catalogues via gRPC
-    try {
+    // TODO: Récupérer les catalogues via GraphQL (remplacer gRPC)
+    /* try {
       List<CatalogDTO> catalogs = grpcClient.getAllCatalogs();
-      log.info("[AGENCY] Got {} catalogs via gRPC", catalogs.size());
+      log.info("[AGENCY] Got {} catalogs via GraphQL", catalogs.size());
 
       for (CatalogDTO catalog : catalogs) {
         if (catalog != null && catalog.getCities() != null) {
@@ -63,8 +63,12 @@ public class AgencyService {
         }
       }
     } catch (Exception e) {
-      log.warn("[AGENCY-CALL] getCatalog via gRPC failed: {}", e.toString());
-    }
+      log.warn("[AGENCY-CALL] getCatalog via GraphQL failed: {}", e.toString());
+    } */
+
+    // Données temporaires pour test
+    cities.add("Montpellier");
+    cities.add("Paris");
 
     Map<String,Object> data = new LinkedHashMap<>();
     data.put("name", "Agence Centrale");
@@ -86,10 +90,10 @@ public class AgencyService {
 
     List<Map<String,Object>> offers = new ArrayList<>();
 
-    try {
-      // Utiliser gRPC pour rechercher sur tous les hôtels
+    // TODO: Utiliser GraphQL pour rechercher sur tous les hôtels (remplacer gRPC)
+    /* try {
       Map<String, List<OfferDTO>> allOffers = grpcClient.searchAllOffers(ville, from, to, nb, agencyId);
-      log.info("[AGENCY] Got offers from {} hotels via gRPC", allOffers.size());
+      log.info("[AGENCY] Got offers from {} hotels via GraphQL", allOffers.size());
 
       for (Map.Entry<String, List<OfferDTO>> entry : allOffers.entrySet()) {
         for (OfferDTO o : entry.getValue()) {
@@ -129,8 +133,10 @@ public class AgencyService {
         }
       }
     } catch (Exception e) {
-      log.warn("[AGENCY-CALL] searchOffers via gRPC failed: {}", e.toString());
-    }
+      log.warn("[AGENCY-CALL] searchOffers via GraphQL failed: {}", e.toString());
+    } */
+
+    log.warn("[AGENCY] searchOffers temporarily disabled during GraphQL migration");
 
     Map<String,Object> data = new LinkedHashMap<>();
     data.put("offers", offers);
@@ -182,21 +188,24 @@ public class AgencyService {
       log.warn("[AGENCY] Invalid dates: {} - {}", arriveeStr, departStr);
     }
 
-    // ⭐ Appeler le service gRPC pour faire la réservation
-    ReservationConfirmationDTO confirmation = grpcClient.makeReservation(
+    // TODO: Appeler le service GraphQL pour faire la réservation (remplacer gRPC)
+    /* ReservationConfirmationDTO confirmation = grpcClient.makeReservation(
       hotelCode, roomNumber, nom, prenom, carte, arrivee, depart, agencyId
-    );
+    ); */
+
+    // Réponse temporaire pendant la migration
+    log.warn("[AGENCY] makeReservation temporarily disabled during GraphQL migration");
 
     Map<String,Object> data = new LinkedHashMap<>();
-    data.put("success", confirmation.isSuccess());
-    data.put("message", confirmation.getMessage());
-    data.put("reference", confirmation.getId());
+    data.put("success", false);
+    data.put("message", "Service temporarily unavailable during GraphQL migration");
+    data.put("reference", "TEMP-000");
 
-    if (confirmation.isSuccess()) {
-      log.info("[AGENCY] ✅ Reservation completed via gRPC: reference={}", confirmation.getId());
+    /* if (confirmation.isSuccess()) {
+      log.info("[AGENCY] ✅ Reservation completed via GraphQL: reference={}", confirmation.getId());
     } else {
       log.warn("[AGENCY] ❌ Reservation failed: {}", confirmation.getMessage());
-    }
+    } */
 
     return data;
   }

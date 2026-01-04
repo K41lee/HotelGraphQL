@@ -583,14 +583,14 @@ echo '{"op":"ping"}' | nc localhost 7070
 
 | Phase | Étapes | Complété | Notes |
 |-------|--------|----------|-------|
-| Phase 1 : Préparation | 2 | 1/2 | Analyse terminée, schéma GraphQL à définir |
-| Phase 2 : Dépendances Maven | 4 | 0/4 | À démarrer |
-| Phase 3 : Schéma GraphQL | 3 | 0/3 | À démarrer |
-| Phase 4 : Serveurs (Opera/Rivage) | 5 | 0/5 | À démarrer |
+| Phase 1 : Préparation | 2 | 2/2 | ✅ TERMINÉ - Schémas GraphQL créés |
+| Phase 2 : Dépendances Maven | 4 | 4/4 | ✅ TERMINÉ - POMs mis à jour, module renommé |
+| Phase 3 : Schéma GraphQL | 3 | 3/3 | ✅ TERMINÉ - 3 schémas .graphqls créés |
+| Phase 4 : Serveurs (Opera/Rivage) | 5 | 1/5 | En cours - Fichiers gRPC supprimés |
 | Phase 5 : Agences (Client) | 4 | 0/4 | À démarrer |
 | Phase 6 : Tests | 4 | 0/4 | À démarrer |
 | Phase 7 : Nettoyage | 4 | 0/4 | À démarrer |
-| **TOTAL** | **26 étapes** | **1/26** | **4% complété** |
+| **TOTAL** | **26 étapes** | **10/26** | **38% complété** |
 
 ---
 
@@ -675,7 +675,56 @@ La migration sera considérée comme réussie si :
 
 ---
 
-**Dernière mise à jour** : 4 janvier 2026  
+**Dernière mise à jour** : 4 janvier 2026 12:35  
 **Responsable** : Équipe de développement  
-**Statut** : 🟡 EN COURS (Phase 1 - Analyse terminée)
+**Statut** : 🟢 EN COURS (Phases 1-3 terminées, Phase 4 en cours)
+
+---
+
+## 📝 Journal des Modifications
+
+### 2026-01-04 12:35 - Phases 1-3 Complétées ✅
+
+#### ✅ Phase 1 : Préparation et Analyse
+- [x] Analyse complète de l'architecture gRPC
+- [x] Identification de tous les points d'intégration
+- [x] Création du plan de migration (MIGRATION_GRPC_TO_GRAPHQL.md)
+- [x] Création des 3 schémas GraphQL (common, hotel, agency)
+
+#### ✅ Phase 2 : Dépendances Maven
+- [x] POM parent : Ajout de `spring-graphql.version=1.1.5`
+- [x] Module renommé : `grpc-commons` → `graphql-commons`
+- [x] graphql-commons/pom.xml : Suppression de gRPC, ajout de GraphQL Extended Scalars
+- [x] server-base/pom.xml : Suppression de `grpc-server-spring-boot-starter`, ajout de `spring-boot-starter-graphql`
+- [x] server-opera/pom.xml : Référence vers `graphql-commons`
+- [x] server-rivage/pom.xml : Référence vers `graphql-commons`
+- [x] agency-server/pom.xml : Ajout de `spring-boot-starter-webflux`
+- [x] agency-server-2/pom.xml : Ajout de `spring-boot-starter-webflux`
+
+#### ✅ Phase 3 : Schémas GraphQL
+- [x] `common-schema.graphqls` : Types de base (Address, ImageInfo, GeoLocation, enums)
+- [x] `hotel-schema.graphqls` : Types métier + Queries + Mutations
+- [x] `agency-schema.graphqls` : Extensions pour agences
+
+#### 🔄 Phase 4 : Migration Serveurs (EN COURS)
+- [x] Suppression des fichiers gRPC (HotelGrpcServiceImpl, ProtoMapper)
+- [x] Suppression des imports gRPC dans les agences
+- [x] Commentaires temporaires dans AgencyService (en attente de HotelGraphQLClient)
+- [ ] Création des contrôleurs GraphQL (server-opera, server-rivage)
+- [ ] Configuration GraphQL (application.properties)
+- [ ] Tests des endpoints GraphQL
+
+#### 📊 Compilation : ✅ BUILD SUCCESS
+```
+[INFO] domain 0.0.1-SNAPSHOT .............................. SUCCESS
+[INFO] GraphQL Commons Module 1.0.0 ....................... SUCCESS
+[INFO] hotel-server-soap 1.0.1-SNAPSHOT ................... SUCCESS
+[INFO] hotel-server-soap-opera 1.0.1-SNAPSHOT ............. SUCCESS
+[INFO] hotel-server-soap-rivage 1.0.1-SNAPSHOT ............ SUCCESS
+[INFO] agency-server 1.0.0 ................................ SUCCESS
+[INFO] agency-server-2 1.0.0 .............................. SUCCESS
+[INFO] BUILD SUCCESS - Total time: 1.802 s
+```
+
+---
 

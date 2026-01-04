@@ -20,10 +20,10 @@
             <version>1.0.1-SNAPSHOT</version>
         </dependency>
 
-        <!-- Module gRPC Commons pour la migration gRPC -->
+        <!-- Module GraphQL Commons pour la migration GraphQL -->
         <dependency>
             <groupId>org.examples</groupId>
-            <artifactId>grpc-commons</artifactId>
+            <artifactId>graphql-commons</artifactId>
             <version>1.0.0</version>
         </dependency>
 

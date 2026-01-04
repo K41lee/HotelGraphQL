@@ -10,7 +10,7 @@
 
     <modules>
         <module>domain</module>
-        <module>grpc-commons</module>
+        <module>graphql-commons</module>
         <module>server-base</module>
         <module>server-opera</module>
         <module>server-rivage</module>
@@ -24,6 +24,8 @@
         <maven.compiler.release>8</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>2.7.12</spring-boot.version>
+        <spring-graphql.version>1.1.5</spring-graphql.version>
+        <graphql-extended-scalars.version>20.0</graphql-extended-scalars.version>
     </properties>
 
     <dependencyManagement>

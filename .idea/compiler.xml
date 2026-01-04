@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="graphql-commons" />
+        <module name="domain" />
+        <module name="agency-server-2" />
+        <module name="client-cli" />
+        <module name="server-base" />
+        <module name="agency-server" />
+        <module name="hotel-server-soap-rivage" />
+        <module name="hotel-server-soap-opera" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>
