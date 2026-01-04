@@ -313,9 +313,16 @@ public class ResultsPanel extends JPanel {
                 String hotelName = MiniJson.getString(offer, "hotelName");
                 String hotelCity = MiniJson.getString(offer, "ville");
                 String category = MiniJson.getString(offer, "categorie");
+
                 // Extraire les données de la chambre depuis l'objet "room"
                 String roomObj = MiniJson.getObject(offer, "room");
                 Integer roomNumInt = roomObj != null ? MiniJson.getInt(roomObj, "numero") : null;
+
+                // ⭐ FALLBACK: Si room.numero est null, essayer offer.numero directement
+                if (roomNumInt == null) {
+                    roomNumInt = MiniJson.getInt(offer, "numero");
+                }
+
                 String roomNum = roomNumInt != null ? String.valueOf(roomNumInt) : null;
                 Integer bedsInt = roomObj != null ? MiniJson.getInt(roomObj, "nbLits") : null;
                 String bedsStr = bedsInt != null ? String.valueOf(bedsInt) : null;

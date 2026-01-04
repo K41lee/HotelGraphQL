@@ -140,11 +140,26 @@ public class AgencyService {
         if (room != null) {
           m.put("categorie", room.get("category"));
 
-          // ⭐ IMPORTANT: Ajouter le numéro de chambre directement dans l'offre pour le GUI
-          m.put("numero", room.get("id"));
+          // ⭐ Extraire et convertir l'ID en Integer si c'est une String
+          Object roomId = room.get("id");
+          Integer roomNumero = null;
+          if (roomId instanceof Integer) {
+            roomNumero = (Integer) roomId;
+          } else if (roomId instanceof String) {
+            try {
+              roomNumero = Integer.parseInt((String) roomId);
+            } catch (NumberFormatException e) {
+              log.warn("[AGENCY] Cannot parse room ID: {}", roomId);
+            }
+          }
+
+          m.put("numero", roomNumero);  // Ajouter directement dans l'offre
+
+          log.debug("[AGENCY] Room processing - id from GraphQL: {} (type: {}), converted to: {}",
+                   roomId, roomId != null ? roomId.getClass().getSimpleName() : "null", roomNumero);
 
           Map<String,Object> r = new LinkedHashMap<>();
-          r.put("numero", room.get("id"));
+          r.put("numero", roomNumero);  // Integer garanti
           r.put("nbLits", room.get("capacity"));
           r.put("prixParNuit", room.get("pricePerNight"));
 
@@ -154,6 +169,8 @@ public class AgencyService {
             r.put("imageUrl", images.get(0).get("url"));
           }
           m.put("room", r);
+
+          log.debug("[AGENCY] Final offer room object: {}", r);
           m.put("nbLits", room.get("capacity"));
         }
 

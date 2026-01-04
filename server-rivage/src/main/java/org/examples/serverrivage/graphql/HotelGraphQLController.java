@@ -260,7 +260,7 @@ public class HotelGraphQLController {
 
             // Room info
             Map<String, Object> room = new HashMap<>();
-            room.put("id", String.valueOf(chambre.getNumero()));
+            room.put("id", chambre.getNumero());  // ⭐ Integer, pas String
             room.put("category", getRoomCategory(chambre));
             room.put("capacity", chambre.getNbLits());
             room.put("pricePerNight", (double) chambre.getPrixParNuit());
